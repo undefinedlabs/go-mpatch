@@ -32,4 +32,5 @@ func copyDataToPtr(ptr uintptr, data []byte) error {
 	if err != nil {
 		return err
 	}
+	return nil
 }
