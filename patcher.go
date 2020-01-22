@@ -65,6 +65,10 @@ func PatchMethodByReflect(target reflect.Method, redirection interface{}) (*Patc
 	}
 	return patch, nil
 }
+func PatchMethodWithMakeFunc(target reflect.Method, fn func(args []reflect.Value) (results []reflect.Value)) (*Patch, error) {
+	rValue := reflect.MakeFunc(target.Type, fn)
+	return PatchMethodByReflect(target, rValue)
+}
 
 func (p *Patch) Patch() error {
 	if p == nil {
