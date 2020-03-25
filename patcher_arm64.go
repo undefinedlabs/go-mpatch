@@ -4,7 +4,5 @@ package mpatch
 
 // Gets the jump function rewrite bytes
 func getJumpFuncBytes(to uintptr) []byte {
-	return []byte{
-
-	}
+	panic("Unsupported arch")
 }
