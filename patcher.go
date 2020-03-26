@@ -109,11 +109,14 @@ func applyPatch(patch *Patch) error {
 	defer patchLock.Unlock()
 	tPointer := patch.target.Pointer()
 	rPointer := getInternalPtrFromValue(*patch.redirection)
-	rPointerJumpBytes := getJumpFuncBytes(rPointer)
+	rPointerJumpBytes, err := getJumpFuncBytes(rPointer)
+	if err != nil {
+		return err
+	}
 	tPointerBytes := getMemorySliceFromPointer(tPointer, len(rPointerJumpBytes))
 	targetBytes := make([]byte, len(tPointerBytes))
 	copy(targetBytes, tPointerBytes)
-	err := copyDataToPtr(tPointer, rPointerJumpBytes)
+	err = copyDataToPtr(tPointer, rPointerJumpBytes)
 	if err != nil {
 		return err
 	}
