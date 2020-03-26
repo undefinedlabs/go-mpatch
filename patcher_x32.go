@@ -3,7 +3,7 @@
 package mpatch
 
 // Gets the jump function rewrite bytes
-func getJumpFuncBytes(to uintptr) []byte {
+func getJumpFuncBytes(to uintptr) ([]byte, error) {
 	return []byte{
 		0xBA,
 		byte(to),
@@ -11,5 +11,5 @@ func getJumpFuncBytes(to uintptr) []byte {
 		byte(to >> 16),
 		byte(to >> 24),
 		0xFF, 0x22,
-	}
+	}, nil
 }
