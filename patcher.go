@@ -42,10 +42,11 @@ func PatchMethod(target, redirection interface{}) (*Patch, error) {
 	return patch, nil
 }
 func PatchInstanceMethodByName(target reflect.Type, methodName string, redirection interface{}) (*Patch, error) {
-	if target.Kind() == reflect.Struct {
-		target = reflect.PtrTo(target)
-	}
 	method, ok := target.MethodByName(methodName)
+	if !ok && target.Kind() == reflect.Struct {
+		target = reflect.PtrTo(target)
+		method, ok = target.MethodByName(methodName)
+	}
 	if !ok {
 		return nil, errors.New(fmt.Sprintf("Method '%v' not found", methodName))
 	}
