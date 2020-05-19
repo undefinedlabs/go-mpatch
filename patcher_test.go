@@ -1,7 +1,9 @@
 package mpatch
 
 import (
+	"fmt"
 	"reflect"
+	"runtime"
 	"testing"
 )
 
@@ -92,4 +94,30 @@ func TestInstanceValuePatcher(t *testing.T) {
 	if mStruct.ValueMethod() != 1 {
 		t.Fatal("The unpatch did not work")
 	}
+}
+
+type myType struct {
+}
+
+var slice []int
+
+//go:noinline
+//go:nosplit
+func TestGarbageCollector(t *testing.T) {
+
+	for i := 0; i < 10000000; i++ {
+		slice = append(slice, i)
+	}
+	aVal := &myType{}
+	ptr01 := reflect.ValueOf(aVal).Pointer()
+	slice = nil
+	runtime.GC()
+	for i := 0; i < 10000000; i++ {
+		slice = append(slice, i)
+	}
+	slice = nil
+	runtime.GC()
+	ptr02 := reflect.ValueOf(aVal).Pointer()
+
+	fmt.Println(ptr01, ptr02)
 }

@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"unsafe"
 )
 
 // Gets the jump function rewrite bytes
-func getJumpFuncBytes(to uintptr) ([]byte, error) {
+//go:nosplit
+func getJumpFuncBytes(to unsafe.Pointer) ([]byte, error) {
 	return nil, errors.New(fmt.Sprintf("Unsupported architecture: %s", runtime.GOARCH))
 }

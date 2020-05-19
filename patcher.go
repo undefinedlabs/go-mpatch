@@ -15,15 +15,19 @@ type (
 		target      *reflect.Value
 		redirection *reflect.Value
 	}
-	pointer struct {
-		length uintptr
-		ptr    uintptr
+	sliceHeader struct {
+		Data unsafe.Pointer
+		Len  int
+		Cap  int
 	}
 )
 
+//go:linkname getInternalPtrFromValue reflect.(*Value).pointer
+func getInternalPtrFromValue(v *reflect.Value) unsafe.Pointer
+
 var (
 	patchLock = sync.Mutex{}
-	patches   = make(map[uintptr]*Patch)
+	patches   = make(map[unsafe.Pointer]*Patch)
 	pageSize  = syscall.Getpagesize()
 )
 
@@ -99,7 +103,7 @@ func isPatchable(target, redirection *reflect.Value) error {
 	if target.Type() != redirection.Type() {
 		return errors.New(fmt.Sprintf("the target and/or redirection doesn't have the same type: %s != %s", target.Type(), redirection.Type()))
 	}
-	if _, ok := patches[target.Pointer()]; ok {
+	if _, ok := patches[getSafePointer(target)]; ok {
 		return errors.New("the target is already patched")
 	}
 	return nil
@@ -108,8 +112,8 @@ func isPatchable(target, redirection *reflect.Value) error {
 func applyPatch(patch *Patch) error {
 	patchLock.Lock()
 	defer patchLock.Unlock()
-	tPointer := patch.target.Pointer()
-	rPointer := getInternalPtrFromValue(*patch.redirection)
+	tPointer := getSafePointer(patch.target)
+	rPointer := getInternalPtrFromValue(patch.redirection)
 	rPointerJumpBytes, err := getJumpFuncBytes(rPointer)
 	if err != nil {
 		return err
@@ -132,7 +136,7 @@ func applyUnpatch(patch *Patch) error {
 	if patch.targetBytes == nil || len(patch.targetBytes) == 0 {
 		return errors.New("the target is not patched")
 	}
-	tPointer := patch.target.Pointer()
+	tPointer := getSafePointer(patch.target)
 	if _, ok := patches[tPointer]; !ok {
 		return errors.New("the target is not patched")
 	}
@@ -144,10 +148,6 @@ func applyUnpatch(patch *Patch) error {
 	return nil
 }
 
-func getInternalPtrFromValue(value reflect.Value) uintptr {
-	return (*pointer)(unsafe.Pointer(&value)).ptr
-}
-
 func getValueFrom(data interface{}) reflect.Value {
 	if cValue, ok := data.(reflect.Value); ok {
 		return cValue
@@ -156,14 +156,18 @@ func getValueFrom(data interface{}) reflect.Value {
 	}
 }
 
-func getMemorySliceFromPointer(p uintptr, length int) []byte {
-	return *(*[]byte)(unsafe.Pointer(&reflect.SliceHeader{
+func getMemorySliceFromPointer(p unsafe.Pointer, length int) []byte {
+	return *(*[]byte)(unsafe.Pointer(&sliceHeader{
 		Data: p,
 		Len:  length,
 		Cap:  length,
 	}))
 }
 
-func getPageStartPtr(ptr uintptr) uintptr {
-	return ptr & ^(uintptr(pageSize - 1))
+func getSafePointer(value *reflect.Value) unsafe.Pointer {
+	p := getInternalPtrFromValue(value)
+	if p != nil {
+		p = *(*unsafe.Pointer)(p)
+	}
+	return p
 }
