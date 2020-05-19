@@ -1,10 +1,10 @@
 package mpatch
 
 import (
-	"fmt"
 	"reflect"
 	"runtime"
 	"testing"
+	"time"
 )
 
 //go:noinline
@@ -96,28 +96,43 @@ func TestInstanceValuePatcher(t *testing.T) {
 	}
 }
 
-type myType struct {
-}
-
 var slice []int
 
 //go:noinline
-//go:nosplit
-func TestGarbageCollector(t *testing.T) {
+func TestGarbageCollectorExperiment(t *testing.T) {
 
 	for i := 0; i < 10000000; i++ {
 		slice = append(slice, i)
 	}
-	aVal := &myType{}
+	go func() {
+		var sl []int
+		for i := 0; i < 10000000; i++ {
+			sl = append(slice, i)
+		}
+		_ = sl
+	}()
+	<-time.After(time.Second)
+
+	aVal := methodA
 	ptr01 := reflect.ValueOf(aVal).Pointer()
 	slice = nil
 	runtime.GC()
 	for i := 0; i < 10000000; i++ {
 		slice = append(slice, i)
 	}
+	go func() {
+		var sl []int
+		for i := 0; i < 10000000; i++ {
+			sl = append(slice, i)
+		}
+		_ = sl
+	}()
+	<-time.After(time.Second)
 	slice = nil
 	runtime.GC()
 	ptr02 := reflect.ValueOf(aVal).Pointer()
 
-	fmt.Println(ptr01, ptr02)
+	if ptr01 != ptr02 {
+		t.Fail()
+	}
 }
