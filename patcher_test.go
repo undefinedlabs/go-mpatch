@@ -2,7 +2,9 @@ package mpatch
 
 import (
 	"reflect"
+	"runtime"
 	"testing"
+	"time"
 )
 
 //go:noinline
@@ -91,5 +93,46 @@ func TestInstanceValuePatcher(t *testing.T) {
 	}
 	if mStruct.ValueMethod() != 1 {
 		t.Fatal("The unpatch did not work")
+	}
+}
+
+var slice []int
+
+//go:noinline
+func TestGarbageCollectorExperiment(t *testing.T) {
+
+	for i := 0; i < 10000000; i++ {
+		slice = append(slice, i)
+	}
+	go func() {
+		var sl []int
+		for i := 0; i < 10000000; i++ {
+			sl = append(slice, i)
+		}
+		_ = sl
+	}()
+	<-time.After(time.Second)
+
+	aVal := methodA
+	ptr01 := reflect.ValueOf(aVal).Pointer()
+	slice = nil
+	runtime.GC()
+	for i := 0; i < 10000000; i++ {
+		slice = append(slice, i)
+	}
+	go func() {
+		var sl []int
+		for i := 0; i < 10000000; i++ {
+			sl = append(slice, i)
+		}
+		_ = sl
+	}()
+	<-time.After(time.Second)
+	slice = nil
+	runtime.GC()
+	ptr02 := reflect.ValueOf(aVal).Pointer()
+
+	if ptr01 != ptr02 {
+		t.Fail()
 	}
 }

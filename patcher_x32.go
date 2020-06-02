@@ -2,14 +2,17 @@
 
 package mpatch
 
+import "unsafe"
+
 // Gets the jump function rewrite bytes
-func getJumpFuncBytes(to uintptr) ([]byte, error) {
+//go:nosplit
+func getJumpFuncBytes(to unsafe.Pointer) ([]byte, error) {
 	return []byte{
 		0xBA,
-		byte(to),
-		byte(to >> 8),
-		byte(to >> 16),
-		byte(to >> 24),
+		byte(uintptr(to)),
+		byte(uintptr(to) >> 8),
+		byte(uintptr(to) >> 16),
+		byte(uintptr(to) >> 24),
 		0xFF, 0x22,
 	}, nil
 }
