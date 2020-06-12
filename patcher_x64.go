@@ -2,9 +2,7 @@
 
 package mpatch
 
-import (
-	"unsafe"
-)
+import "unsafe"
 
 const jumpLength = 12
 
