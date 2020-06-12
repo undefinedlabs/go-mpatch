@@ -24,8 +24,7 @@ func getMemorySliceFromUintptr(p uintptr, length int) []byte {
 func callMProtect(addr unsafe.Pointer, length int, prot int) error {
 	for p := uintptr(addr) & ^(uintptr(pageSize - 1)); p < uintptr(addr)+uintptr(length); p += uintptr(pageSize) {
 		page := getMemorySliceFromUintptr(p, pageSize)
-		err := syscall.Mprotect(page, prot)
-		if err != nil {
+		if err := syscall.Mprotect(page, prot); err != nil {
 			return err
 		}
 	}
@@ -35,13 +34,11 @@ func callMProtect(addr unsafe.Pointer, length int, prot int) error {
 func copyDataToPtr(ptr unsafe.Pointer, data []byte) error {
 	dataLength := len(data)
 	ptrByteSlice := getMemorySliceFromPointer(ptr, len(data))
-	err := callMProtect(ptr, dataLength, writeAccess)
-	if err != nil {
+	if err := callMProtect(ptr, dataLength, writeAccess); err != nil {
 		return err
 	}
 	copy(ptrByteSlice, data[:])
-	err = callMProtect(ptr, dataLength, readAccess)
-	if err != nil {
+	if err := callMProtect(ptr, dataLength, readAccess); err != nil {
 		return err
 	}
 	return nil

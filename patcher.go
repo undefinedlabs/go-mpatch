@@ -34,13 +34,11 @@ var (
 func PatchMethod(target, redirection interface{}) (*Patch, error) {
 	tValue := getValueFrom(target)
 	rValue := getValueFrom(redirection)
-	err := isPatchable(&tValue, &rValue)
-	if err != nil {
+	if err := isPatchable(&tValue, &rValue); err != nil {
 		return nil, err
 	}
 	patch := &Patch{target: &tValue, redirection: &rValue}
-	err = applyPatch(patch)
-	if err != nil {
+	if err := applyPatch(patch); err != nil {
 		return nil, err
 	}
 	return patch, nil
@@ -54,37 +52,32 @@ func PatchInstanceMethodByName(target reflect.Type, methodName string, redirecti
 	if !ok {
 		return nil, errors.New(fmt.Sprintf("Method '%v' not found", methodName))
 	}
-	return PatchMethodByReflect(method, redirection)
+	return PatchMethodByReflect(method.Func, redirection)
 }
-func PatchMethodByReflect(target reflect.Method, redirection interface{}) (*Patch, error) {
-	tValue := &target.Func
+func PatchMethodByReflect(target reflect.Value, redirection interface{}) (*Patch, error) {
+	tValue := &target
 	rValue := getValueFrom(redirection)
-	err := isPatchable(tValue, &rValue)
-	if err != nil {
+	if err := isPatchable(tValue, &rValue); err != nil {
 		return nil, err
 	}
 	patch := &Patch{target: tValue, redirection: &rValue}
-	err = applyPatch(patch)
-	if err != nil {
+	if err := applyPatch(patch); err != nil {
 		return nil, err
 	}
 	return patch, nil
 }
-func PatchMethodWithMakeFunc(target reflect.Method, fn func(args []reflect.Value) (results []reflect.Value)) (*Patch, error) {
-	rValue := reflect.MakeFunc(target.Type, fn)
-	return PatchMethodByReflect(target, rValue)
+func PatchMethodWithMakeFunc(target reflect.Value, fn func(args []reflect.Value) (results []reflect.Value)) (*Patch, error) {
+	return PatchMethodByReflect(target, reflect.MakeFunc(target.Type(), fn))
 }
 
 func (p *Patch) Patch() error {
 	if p == nil {
 		return errors.New("patch is nil")
 	}
-	err := isPatchable(p.target, p.redirection)
-	if err != nil {
+	if err := isPatchable(p.target, p.redirection); err != nil {
 		return err
 	}
-	err = applyPatch(p)
-	if err != nil {
+	if err := applyPatch(p); err != nil {
 		return err
 	}
 	return nil
@@ -103,7 +96,7 @@ func isPatchable(target, redirection *reflect.Value) error {
 	if target.Type() != redirection.Type() {
 		return errors.New(fmt.Sprintf("the target and/or redirection doesn't have the same type: %s != %s", target.Type(), redirection.Type()))
 	}
-	if _, ok := patches[getSafePointer(target)]; ok {
+	if _, ok := patches[getSafeCodePointer(target)]; ok {
 		return errors.New("the target is already patched")
 	}
 	return nil
@@ -112,7 +105,7 @@ func isPatchable(target, redirection *reflect.Value) error {
 func applyPatch(patch *Patch) error {
 	patchLock.Lock()
 	defer patchLock.Unlock()
-	tPointer := getSafePointer(patch.target)
+	tPointer := getSafeCodePointer(patch.target)
 	rPointer := getInternalPtrFromValue(patch.redirection)
 	rPointerJumpBytes, err := getJumpFuncBytes(rPointer)
 	if err != nil {
@@ -121,8 +114,7 @@ func applyPatch(patch *Patch) error {
 	tPointerBytes := getMemorySliceFromPointer(tPointer, len(rPointerJumpBytes))
 	targetBytes := make([]byte, len(tPointerBytes))
 	copy(targetBytes, tPointerBytes)
-	err = copyDataToPtr(tPointer, rPointerJumpBytes)
-	if err != nil {
+	if err := copyDataToPtr(tPointer, rPointerJumpBytes); err != nil {
 		return err
 	}
 	patch.targetBytes = targetBytes
@@ -136,7 +128,7 @@ func applyUnpatch(patch *Patch) error {
 	if patch.targetBytes == nil || len(patch.targetBytes) == 0 {
 		return errors.New("the target is not patched")
 	}
-	tPointer := getSafePointer(patch.target)
+	tPointer := getSafeCodePointer(patch.target)
 	if _, ok := patches[tPointer]; !ok {
 		return errors.New("the target is not patched")
 	}
@@ -164,7 +156,7 @@ func getMemorySliceFromPointer(p unsafe.Pointer, length int) []byte {
 	}))
 }
 
-func getSafePointer(value *reflect.Value) unsafe.Pointer {
+func getSafeCodePointer(value *reflect.Value) unsafe.Pointer {
 	p := getInternalPtrFromValue(value)
 	if p != nil {
 		p = *(*unsafe.Pointer)(p)

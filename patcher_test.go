@@ -44,6 +44,44 @@ func TestPatcher(t *testing.T) {
 	}
 }
 
+func TestPatcherUsingReflect(t *testing.T) {
+	patch, err := PatchMethodByReflect(reflect.ValueOf(methodA), methodB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if methodA() != 2 {
+		t.Fatal("The patch did not work")
+	}
+
+	err = patch.Unpatch()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if methodA() != 1 {
+		t.Fatal("The unpatch did not work")
+	}
+}
+
+func TestPatcherUsingMakeFunc(t *testing.T) {
+	patch, err := PatchMethodWithMakeFunc(reflect.ValueOf(methodA), func(args []reflect.Value) (results []reflect.Value) {
+		return []reflect.Value{reflect.ValueOf(42)}
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if methodA() != 42 {
+		t.Fatal("The patch did not work")
+	}
+
+	err = patch.Unpatch()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if methodA() != 1 {
+		t.Fatal("The unpatch did not work")
+	}
+}
+
 func TestInstancePatcher(t *testing.T) {
 	mStruct := myStruct{}
 
