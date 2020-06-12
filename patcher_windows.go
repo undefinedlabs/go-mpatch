@@ -23,13 +23,11 @@ func copyDataToPtr(ptr unsafe.Pointer, data []byte) error {
 	var oldPerms, tmp uint32
 	dataLength := len(data)
 	ptrByteSlice := getMemorySliceFromPointer(ptr, len(data))
-	err := callVirtualProtect(ptr, dataLength, pageExecuteReadAndWrite, unsafe.Pointer(&oldPerms))
-	if err != nil {
+	if err := callVirtualProtect(ptr, dataLength, pageExecuteReadAndWrite, unsafe.Pointer(&oldPerms)); err != nil {
 		return err
 	}
 	copy(ptrByteSlice, data[:])
-	err = callVirtualProtect(ptr, dataLength, oldPerms, unsafe.Pointer(&tmp))
-	if err != nil {
+	if err := callVirtualProtect(ptr, dataLength, oldPerms, unsafe.Pointer(&tmp)); err != nil {
 		return err
 	}
 	return nil

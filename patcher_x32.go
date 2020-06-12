@@ -2,7 +2,11 @@
 
 package mpatch
 
-import "unsafe"
+import (
+	"unsafe"
+)
+
+const jumpLength = 7
 
 // Gets the jump function rewrite bytes
 //go:nosplit
