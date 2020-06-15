@@ -104,4 +104,78 @@ func TestPatcherUsingMakeFunc(t *testing.T) {
 }
 ```
 
+### Patching an instance func
+```go
+type myStruct struct {
+}
+
+//go:noinline
+func (s *myStruct) Method() int {
+	return 1
+}
+
+func TestInstancePatcher(t *testing.T) {
+	mStruct := myStruct{}
+
+	var patch *Patch
+	var err error
+	patch, err = PatchInstanceMethodByName(reflect.TypeOf(mStruct), "Method", func(m *myStruct) int {
+		patch.Unpatch()
+		defer patch.Patch()
+		return 41 + m.Method()
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if mStruct.Method() != 42 {
+		t.Fatal("The patch did not work")
+	}
+	err = patch.Unpatch()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mStruct.Method() != 1 {
+		t.Fatal("The unpatch did not work")
+	}
+}
+```
+
+### Patching an instance func by Value
+```go
+type myStruct struct {
+}
+
+//go:noinline
+func (s myStruct) ValueMethod() int {
+	return 1
+}
+
+func TestInstanceValuePatcher(t *testing.T) {
+	mStruct := myStruct{}
+
+	var patch *Patch
+	var err error
+	patch, err = PatchInstanceMethodByName(reflect.TypeOf(mStruct), "ValueMethod", func(m myStruct) int {
+		patch.Unpatch()
+		defer patch.Patch()
+		return 41 + m.Method()
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if mStruct.ValueMethod() != 42 {
+		t.Fatal("The patch did not work")
+	}
+	err = patch.Unpatch()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mStruct.ValueMethod() != 1 {
+		t.Fatal("The unpatch did not work")
+	}
+}
+```
+
 > Library inspired by the blog post: https://bou.ke/blog/monkey-patching-in-go/
