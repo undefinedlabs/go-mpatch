@@ -6,7 +6,6 @@ Go library for monkey patching
 - **Go version:** tested from `go1.7` to `go1.15-beta`
 - **Architectures:** `x86`, `amd64`
 - **Operating systems:** tested in `macos`, `linux` and `windows`. 
-Write permission to memory pages containing executable code is needed, some operating systems could restrict this access.
 
 ## Features
 
@@ -16,6 +15,8 @@ Write permission to memory pages containing executable code is needed, some oper
 
 - Target functions could be inlined, making those functions unpatcheables. You can use `//go:noinline` directive or build with the `gcflags=-l`
 to disable inlining at compiler level.
+
+- Write permission to memory pages containing executable code is needed, some operating systems could restrict this access.
 
 - Not thread safe.
 
