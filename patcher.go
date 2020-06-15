@@ -31,6 +31,7 @@ var (
 	pageSize  = syscall.Getpagesize()
 )
 
+// Patches a target func to redirect calls to "redirection" func. Both function must have same arguments and return types.
 func PatchMethod(target, redirection interface{}) (*Patch, error) {
 	tValue := getValueFrom(target)
 	rValue := getValueFrom(redirection)
@@ -43,6 +44,8 @@ func PatchMethod(target, redirection interface{}) (*Patch, error) {
 	}
 	return patch, nil
 }
+// Patches an instance func by using two parameters, the target struct type and the method name inside that type,
+//this func will be redirected to the "redirection" func. Note: The first parameter of the redirection func must be the object instance.
 func PatchInstanceMethodByName(target reflect.Type, methodName string, redirection interface{}) (*Patch, error) {
 	method, ok := target.MethodByName(methodName)
 	if !ok && target.Kind() == reflect.Struct {
@@ -54,6 +57,8 @@ func PatchInstanceMethodByName(target reflect.Type, methodName string, redirecti
 	}
 	return PatchMethodByReflect(method.Func, redirection)
 }
+// Patches a target func by passing the reflect.ValueOf of the func. The target func will be redirected to the "redirection" func.
+// Both function must have same arguments and return types.
 func PatchMethodByReflect(target reflect.Value, redirection interface{}) (*Patch, error) {
 	tValue := &target
 	rValue := getValueFrom(redirection)
@@ -66,10 +71,11 @@ func PatchMethodByReflect(target reflect.Value, redirection interface{}) (*Patch
 	}
 	return patch, nil
 }
+// Patches a target func with a "redirection" function created at runtime by using "reflect.MakeFunc".
 func PatchMethodWithMakeFunc(target reflect.Value, fn func(args []reflect.Value) (results []reflect.Value)) (*Patch, error) {
 	return PatchMethodByReflect(target, reflect.MakeFunc(target.Type(), fn))
 }
-
+// Patch the target func with the redirection func.
 func (p *Patch) Patch() error {
 	if p == nil {
 		return errors.New("patch is nil")
@@ -82,6 +88,7 @@ func (p *Patch) Patch() error {
 	}
 	return nil
 }
+// Unpatch the target func and recover the original func.
 func (p *Patch) Unpatch() error {
 	if p == nil {
 		return errors.New("patch is nil")
@@ -96,7 +103,7 @@ func isPatchable(target, redirection *reflect.Value) error {
 	if target.Type() != redirection.Type() {
 		return errors.New(fmt.Sprintf("the target and/or redirection doesn't have the same type: %s != %s", target.Type(), redirection.Type()))
 	}
-	if _, ok := patches[getSafeCodePointer(target)]; ok {
+	if _, ok := patches[getCodePointer(target)]; ok {
 		return errors.New("the target is already patched")
 	}
 	return nil
@@ -105,7 +112,7 @@ func isPatchable(target, redirection *reflect.Value) error {
 func applyPatch(patch *Patch) error {
 	patchLock.Lock()
 	defer patchLock.Unlock()
-	tPointer := getSafeCodePointer(patch.target)
+	tPointer := getCodePointer(patch.target)
 	rPointer := getInternalPtrFromValue(patch.redirection)
 	rPointerJumpBytes, err := getJumpFuncBytes(rPointer)
 	if err != nil {
@@ -114,7 +121,7 @@ func applyPatch(patch *Patch) error {
 	tPointerBytes := getMemorySliceFromPointer(tPointer, len(rPointerJumpBytes))
 	targetBytes := make([]byte, len(tPointerBytes))
 	copy(targetBytes, tPointerBytes)
-	if err := copyDataToPtr(tPointer, rPointerJumpBytes); err != nil {
+	if err := writeDataToPointer(tPointer, rPointerJumpBytes); err != nil {
 		return err
 	}
 	patch.targetBytes = targetBytes
@@ -128,12 +135,12 @@ func applyUnpatch(patch *Patch) error {
 	if patch.targetBytes == nil || len(patch.targetBytes) == 0 {
 		return errors.New("the target is not patched")
 	}
-	tPointer := getSafeCodePointer(patch.target)
+	tPointer := getCodePointer(patch.target)
 	if _, ok := patches[tPointer]; !ok {
 		return errors.New("the target is not patched")
 	}
 	delete(patches, tPointer)
-	err := copyDataToPtr(tPointer, patch.targetBytes)
+	err := writeDataToPointer(tPointer, patch.targetBytes)
 	if err != nil {
 		return err
 	}
@@ -148,6 +155,7 @@ func getValueFrom(data interface{}) reflect.Value {
 	}
 }
 
+// Extracts a memory slice from a pointer
 func getMemorySliceFromPointer(p unsafe.Pointer, length int) []byte {
 	return *(*[]byte)(unsafe.Pointer(&sliceHeader{
 		Data: p,
@@ -156,7 +164,8 @@ func getMemorySliceFromPointer(p unsafe.Pointer, length int) []byte {
 	}))
 }
 
-func getSafeCodePointer(value *reflect.Value) unsafe.Pointer {
+// Gets the code pointer of a func
+func getCodePointer(value *reflect.Value) unsafe.Pointer {
 	p := getInternalPtrFromValue(value)
 	if p != nil {
 		p = *(*unsafe.Pointer)(p)
