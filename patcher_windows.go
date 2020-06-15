@@ -19,7 +19,7 @@ func callVirtualProtect(lpAddress unsafe.Pointer, dwSize int, flNewProtect uint3
 	return nil
 }
 
-func copyDataToPtr(ptr unsafe.Pointer, data []byte) error {
+func writeDataToPointer(ptr unsafe.Pointer, data []byte) error {
 	var oldPerms, tmp uint32
 	dataLength := len(data)
 	ptrByteSlice := getMemorySliceFromPointer(ptr, len(data))

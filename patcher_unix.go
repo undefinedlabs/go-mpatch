@@ -31,7 +31,7 @@ func callMProtect(addr unsafe.Pointer, length int, prot int) error {
 	return nil
 }
 
-func copyDataToPtr(ptr unsafe.Pointer, data []byte) error {
+func writeDataToPointer(ptr unsafe.Pointer, data []byte) error {
 	dataLength := len(data)
 	ptrByteSlice := getMemorySliceFromPointer(ptr, len(data))
 	if err := callMProtect(ptr, dataLength, writeAccess); err != nil {
