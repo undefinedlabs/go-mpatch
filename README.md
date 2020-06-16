@@ -59,7 +59,7 @@ func methodB() int { return 2 }
 
 func TestPatcherUsingReflect(t *testing.T) {
 	reflectA := reflect.ValueOf(methodA)
-	patch, err := mPatch.PatchMethodByReflect(reflectA, methodB)
+	patch, err := mPatch.PatchMethodByReflectValue(reflectA, methodB)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func methodA() int { return 1 }
 
 func TestPatcherUsingMakeFunc(t *testing.T) {
 	reflectA := reflect.ValueOf(methodA)
-	patch, err := PatchMethodWithMakeFunc(reflectA,
+	patch, err := PatchMethodWithMakeFuncValue(reflectA,
 		func(args []reflect.Value) (results []reflect.Value) {
 			return []reflect.Value{reflect.ValueOf(42)}
 		})

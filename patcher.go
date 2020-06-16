@@ -44,6 +44,7 @@ func PatchMethod(target, redirection interface{}) (*Patch, error) {
 	}
 	return patch, nil
 }
+
 // Patches an instance func by using two parameters, the target struct type and the method name inside that type,
 //this func will be redirected to the "redirection" func. Note: The first parameter of the redirection func must be the object instance.
 func PatchInstanceMethodByName(target reflect.Type, methodName string, redirection interface{}) (*Patch, error) {
@@ -55,11 +56,23 @@ func PatchInstanceMethodByName(target reflect.Type, methodName string, redirecti
 	if !ok {
 		return nil, errors.New(fmt.Sprintf("Method '%v' not found", methodName))
 	}
-	return PatchMethodByReflect(method.Func, redirection)
+	return PatchMethodByReflect(method, redirection)
 }
+
+// Patches a target func by passing the reflect.Method of the func. The target func will be redirected to the "redirection" func.
+// Both function must have same arguments and return types.
+func PatchMethodByReflect(target reflect.Method, redirection interface{}) (*Patch, error) {
+	return PatchMethodByReflectValue(target.Func, redirection)
+}
+
+// Patches a target func with a "redirection" function created at runtime by using "reflect.MakeFunc".
+func PatchMethodWithMakeFunc(target reflect.Method, fn func(args []reflect.Value) (results []reflect.Value)) (*Patch, error) {
+	return PatchMethodByReflect(target, reflect.MakeFunc(target.Type, fn))
+}
+
 // Patches a target func by passing the reflect.ValueOf of the func. The target func will be redirected to the "redirection" func.
 // Both function must have same arguments and return types.
-func PatchMethodByReflect(target reflect.Value, redirection interface{}) (*Patch, error) {
+func PatchMethodByReflectValue(target reflect.Value, redirection interface{}) (*Patch, error) {
 	tValue := &target
 	rValue := getValueFrom(redirection)
 	if err := isPatchable(tValue, &rValue); err != nil {
@@ -71,10 +84,12 @@ func PatchMethodByReflect(target reflect.Value, redirection interface{}) (*Patch
 	}
 	return patch, nil
 }
+
 // Patches a target func with a "redirection" function created at runtime by using "reflect.MakeFunc".
-func PatchMethodWithMakeFunc(target reflect.Value, fn func(args []reflect.Value) (results []reflect.Value)) (*Patch, error) {
-	return PatchMethodByReflect(target, reflect.MakeFunc(target.Type(), fn))
+func PatchMethodWithMakeFuncValue(target reflect.Value, fn func(args []reflect.Value) (results []reflect.Value)) (*Patch, error) {
+	return PatchMethodByReflectValue(target, reflect.MakeFunc(target.Type(), fn))
 }
+
 // Patch the target func with the redirection func.
 func (p *Patch) Patch() error {
 	if p == nil {
@@ -88,6 +103,7 @@ func (p *Patch) Patch() error {
 	}
 	return nil
 }
+
 // Unpatch the target func and recover the original func.
 func (p *Patch) Unpatch() error {
 	if p == nil {
