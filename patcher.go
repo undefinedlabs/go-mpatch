@@ -113,6 +113,8 @@ func (p *Patch) Unpatch() error {
 }
 
 func isPatchable(target, redirection *reflect.Value) error {
+	patchLock.Lock()
+	defer patchLock.Unlock()
 	if target.Kind() != reflect.Func || redirection.Kind() != reflect.Func {
 		return errors.New("the target and/or redirection is not a Func")
 	}
