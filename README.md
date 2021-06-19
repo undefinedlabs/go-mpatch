@@ -3,7 +3,7 @@ Go library for monkey patching
 
 ## Compatibility
 
-- **Go version:** tested from `go1.7` to `go1.15-beta`
+- **Go version:** tested from `go1.7` to `go1.16`
 - **Architectures:** `x86`, `amd64`
 - **Operating systems:** tested in `macos`, `linux` and `windows`. 
 
