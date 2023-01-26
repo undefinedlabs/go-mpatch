@@ -1,15 +1,24 @@
 package mpatch
 
 import (
+	"math/rand"
 	"reflect"
 	"testing"
 )
 
 //go:noinline
-func methodA() int { return 1 }
+func methodA() int {
+	x := rand.Int() >> 48
+	y := rand.Int() >> 48
+	return x + y
+}
 
 //go:noinline
-func methodB() int { return 2 }
+func methodB() int {
+	x := rand.Int() >> 48
+	y := rand.Int() >> 48
+	return -(x + y)
+}
 
 type myStruct struct {
 }
@@ -29,15 +38,14 @@ func TestPatcher(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if methodA() != 2 {
+	if methodA() > 0 {
 		t.Fatal("The patch did not work")
 	}
-
 	err = patch.Unpatch()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if methodA() != 1 {
+	if methodA() < 0 {
 		t.Fatal("The unpatch did not work")
 	}
 }
@@ -48,7 +56,7 @@ func TestPatcherUsingReflect(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if methodA() != 2 {
+	if methodA() > 0 {
 		t.Fatal("The patch did not work")
 	}
 
@@ -56,7 +64,7 @@ func TestPatcherUsingReflect(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if methodA() != 1 {
+	if methodA() < 0 {
 		t.Fatal("The unpatch did not work")
 	}
 }
@@ -78,7 +86,7 @@ func TestPatcherUsingMakeFunc(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if methodA() != 1 {
+	if methodA() < 0 {
 		t.Fatal("The unpatch did not work")
 	}
 }
