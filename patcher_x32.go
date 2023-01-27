@@ -1,12 +1,12 @@
+//go:build 386
 // +build 386
 
 package mpatch
 
 import "unsafe"
 
-const jumpLength = 7
-
 // Gets the jump function rewrite bytes
+//
 //go:nosplit
 func getJumpFuncBytes(to unsafe.Pointer) ([]byte, error) {
 	return []byte{

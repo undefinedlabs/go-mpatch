@@ -1,12 +1,12 @@
+//go:build amd64
 // +build amd64
 
 package mpatch
 
 import "unsafe"
 
-const jumpLength = 12
-
 // Gets the jump function rewrite bytes
+//
 //go:nosplit
 func getJumpFuncBytes(to unsafe.Pointer) ([]byte, error) {
 	return []byte{

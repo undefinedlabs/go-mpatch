@@ -46,7 +46,7 @@ func PatchMethod(target, redirection interface{}) (*Patch, error) {
 }
 
 // Patches an instance func by using two parameters, the target struct type and the method name inside that type,
-//this func will be redirected to the "redirection" func. Note: The first parameter of the redirection func must be the object instance.
+// this func will be redirected to the "redirection" func. Note: The first parameter of the redirection func must be the object instance.
 func PatchInstanceMethodByName(target reflect.Type, methodName string, redirection interface{}) (*Patch, error) {
 	method, ok := target.MethodByName(methodName)
 	if !ok && target.Kind() == reflect.Struct {

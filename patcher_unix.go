@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 package mpatch
@@ -5,6 +6,7 @@ package mpatch
 import (
 	"reflect"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
@@ -41,5 +43,6 @@ func writeDataToPointer(ptr unsafe.Pointer, data []byte) error {
 	if err := callMProtect(ptr, dataLength, readAccess); err != nil {
 		return err
 	}
+	<-time.After(100 * time.Microsecond) // If we remove this line then it fails to unpatch on ARM64
 	return nil
 }

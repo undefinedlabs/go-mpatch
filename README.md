@@ -4,8 +4,15 @@ Go library for monkey patching
 ## Compatibility
 
 - **Go version:** tested from `go1.7` to `go1.19`
-- **Architectures:** `x86`, `amd64`
+- **Architectures:** `x86`, `amd64`, `arm64` (ARM64 not supported on macos)
 - **Operating systems:** tested in `macos`, `linux` and `windows`. 
+
+### ARM64 support
+The support for ARM64 have some caveats. For example:
+- On Windows 11 ARM64 works like any other platform, we test it with tiny methods and worked correctly.
+- On Linux ARM64 the minimum target and source method size must be > 24 bytes. This means a simple 1 liner method will silently fail. In our tests we have methods at least with 3 lines and works correctly (beware of the compiler optimizations). 
+This doesn't happen in any other platform because the assembly code we emit is really short (x64: 12 bytes / x86: 7 bytes), but for ARM64 is exactly 24 bytes.
+- On MacOS ARM64 the patching fails with `EACCES: permission denied` when calling `syscall.Mprotect`. There's no current workaround for this issue, if you use an Apple Silicon Mac you can use a docker container or docker dev environment.
 
 ## Features
 
