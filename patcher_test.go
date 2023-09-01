@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"reflect"
 	"testing"
+	"time"
 )
 
 //go:noinline
@@ -141,4 +142,14 @@ func TestInstanceValuePatcher(t *testing.T) {
 	if mStruct.ValueMethod() != 1 {
 		t.Fatal("The unpatch did not work")
 	}
+}
+
+func TestRaceTest(t *testing.T) {
+	patch, _ := PatchMethod(
+		time.Now, func() time.Time {
+			loc, _ := time.LoadLocation("America/Sao_Paulo")
+			return time.Date(2000, 12, 15, 17, 8, 00, 0, loc)
+		})
+
+	defer patch.Unpatch()
 }
